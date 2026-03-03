@@ -13,11 +13,11 @@ const About = () => (
       <div className="container py-16 md:py-24 text-center max-w-2xl mx-auto">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">Our Story</p>
-          <h1 className="font-display text-3xl font-bold md:text-4xl">About Milk & Honey Gold</h1>
+          <h1 className="font-display text-3xl font-bold md:text-4xl">About ADEDAS MULTIBUSINESS LTD</h1>
           <p className="text-muted-foreground leading-relaxed">
-            Born from a desire to bring luxury skincare to everyone, Milk & Honey Gold combines 
-            centuries-old beauty secrets with modern science. Our gold-infused formulas harness the 
-            nourishing power of organic honey and milk proteins to deliver transformative results.
+            Born from a desire to bring premium skincare to everyone, ADEDAS MULTIBUSINESS LTD combines 
+            centuries-old beauty secrets with modern science. Our curated formulas harness the 
+            nourishing power of organic shea butter, honey, and natural botanicals to deliver transformative results.
           </p>
         </motion.div>
       </div>

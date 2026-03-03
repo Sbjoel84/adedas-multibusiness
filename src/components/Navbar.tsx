@@ -22,7 +22,7 @@ const Navbar = () => {
 
         {/* Logo */}
         <Link to="/" className="font-display text-xl font-bold tracking-wide md:text-2xl text-gradient-gold">
-          Milk & Honey Gold
+          ADEDAS MULTIBUSINESS
         </Link>
 
         {/* Desktop nav */}
