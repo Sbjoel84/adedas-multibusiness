@@ -21,7 +21,7 @@ const HeroSection = () => (
             <span className="text-gradient-gold">For Radiant Glow</span>
           </h1>
           <p className="max-w-md text-base text-muted-foreground leading-relaxed">
-            Discover our curated collection of Jimpo-Ori & Milk & Honey Gold products — crafted with shea butter, organic honey, and natural botanicals for beautiful, nourished skin.
+            Discover our curated collection of Jimpo-Ori & premium skincare products — crafted with shea butter, organic honey, and natural botanicals for beautiful, nourished skin.
           </p>
           <div className="flex flex-wrap gap-3">
             <Button asChild size="lg" className="bg-gradient-gold text-primary-foreground hover:opacity-90 gap-2 rounded-full px-8">

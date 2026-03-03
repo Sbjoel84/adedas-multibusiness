@@ -5,9 +5,9 @@ const Footer = () => (
     <div className="container py-12 md:py-16">
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
         <div>
-          <h3 className="font-display text-lg font-semibold mb-3">Milk & Honey Gold</h3>
+          <h3 className="font-display text-lg font-semibold mb-3">ADEDAS MULTIBUSINESS LTD</h3>
           <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
-            Premium skincare and wellness products crafted with natural ingredients. Experience the luxury of gold-infused beauty.
+            Premium skincare and wellness products crafted with natural ingredients. Your trusted source for quality beauty care.
           </p>
         </div>
         <div>
@@ -28,7 +28,7 @@ const Footer = () => (
         </div>
       </div>
       <div className="mt-10 border-t border-border pt-6 text-center text-xs text-muted-foreground">
-        © 2026 Milk & Honey Gold. All rights reserved.
+        © 2026 ADEDAS MULTIBUSINESS LTD. All rights reserved.
       </div>
     </div>
   </footer>
