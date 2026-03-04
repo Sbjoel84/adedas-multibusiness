@@ -1,23 +1,26 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { products, formatPrice, Product } from "@/data/products";
+import { formatPrice, Product } from "@/data/products";
+import { useProducts } from "@/hooks/useProducts";
+import ProductFormDialog from "@/components/ProductFormDialog";
 import {
   Package, ShoppingCart, DollarSign, TrendingUp,
-  Edit, Trash2, Plus, Eye, Download, ArrowLeft,
-  Search, Filter
+  Edit, Trash2, Plus, Eye, Download, ArrowLeft, Search
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Table, TableBody, TableCell, TableHead,
-  TableHeader, TableRow
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 
-// Mock orders
 const mockOrders = [
   { id: "ORD-001", customer: "Adaeze Obi", email: "adaeze@email.com", items: 3, total: 23200, status: "delivered", date: "2026-02-28" },
   { id: "ORD-002", customer: "Chukwuma Eze", email: "chukwuma@email.com", items: 1, total: 8500, status: "shipped", date: "2026-03-01" },
@@ -36,13 +39,14 @@ const statusColors: Record<string, string> = {
 
 const Admin = () => {
   const { toast } = useToast();
+  const { products, addProduct, updateProduct, deleteProduct } = useProducts();
   const [searchProduct, setSearchProduct] = useState("");
   const [searchOrder, setSearchOrder] = useState("");
   const [orders, setOrders] = useState(mockOrders);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
-  const totalOrders = orders.length;
-  const totalProducts = products.length;
   const pendingOrders = orders.filter(o => o.status === "pending").length;
 
   const filteredProducts = products.filter(p =>
@@ -68,28 +72,44 @@ const Admin = () => {
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
-    a.download = "orders-report.csv";
-    a.click();
+    a.href = url; a.download = "orders-report.csv"; a.click();
     toast({ title: "Report exported", description: "CSV file downloaded successfully." });
+  };
+
+  const handleSave = (data: Omit<Product, "id">) => {
+    if (editingProduct) {
+      updateProduct(editingProduct.id, data);
+      toast({ title: "Product updated", description: `${data.name} has been updated.` });
+    } else {
+      addProduct(data);
+      toast({ title: "Product added", description: `${data.name} has been added to the catalogue.` });
+    }
+    setEditingProduct(null);
+  };
+
+  const handleEdit = (product: Product) => {
+    setEditingProduct(product);
+    setFormOpen(true);
+  };
+
+  const handleDelete = (product: Product) => {
+    deleteProduct(product.id);
+    toast({ title: "Product deleted", description: `${product.name} has been removed.` });
   };
 
   const stats = [
     { label: "Total Revenue", value: formatPrice(totalRevenue), icon: DollarSign, accent: "text-green-600" },
-    { label: "Total Orders", value: totalOrders, icon: ShoppingCart, accent: "text-blue-600" },
-    { label: "Products", value: totalProducts, icon: Package, accent: "text-primary" },
+    { label: "Total Orders", value: orders.length, icon: ShoppingCart, accent: "text-blue-600" },
+    { label: "Products", value: products.length, icon: Package, accent: "text-primary" },
     { label: "Pending Orders", value: pendingOrders, icon: TrendingUp, accent: "text-yellow-600" },
   ];
 
   return (
     <main className="min-h-screen bg-muted/30">
-      {/* Header */}
       <div className="border-b border-border bg-background">
         <div className="container flex items-center justify-between py-4">
           <div className="flex items-center gap-4">
-            <Link to="/">
-              <Button variant="ghost" size="icon"><ArrowLeft className="h-5 w-5" /></Button>
-            </Link>
+            <Link to="/"><Button variant="ghost" size="icon"><ArrowLeft className="h-5 w-5" /></Button></Link>
             <div>
               <h1 className="font-display text-2xl font-bold">Admin Dashboard</h1>
               <p className="text-sm text-muted-foreground">Manage your store</p>
@@ -102,14 +122,11 @@ const Admin = () => {
       </div>
 
       <div className="container py-6 space-y-6">
-        {/* Stats */}
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {stats.map((s) => (
             <Card key={s.label}>
               <CardContent className="flex items-center gap-4 p-5">
-                <div className={`rounded-lg bg-muted p-3 ${s.accent}`}>
-                  <s.icon className="h-5 w-5" />
-                </div>
+                <div className={`rounded-lg bg-muted p-3 ${s.accent}`}><s.icon className="h-5 w-5" /></div>
                 <div>
                   <p className="text-xs text-muted-foreground">{s.label}</p>
                   <p className="text-xl font-bold">{s.value}</p>
@@ -119,26 +136,19 @@ const Admin = () => {
           ))}
         </div>
 
-        {/* Tabs */}
         <Tabs defaultValue="products">
           <TabsList className="w-full justify-start">
             <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
           </TabsList>
 
-          {/* Products Tab */}
           <TabsContent value="products" className="space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="relative max-w-sm flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search products..."
-                  value={searchProduct}
-                  onChange={(e) => setSearchProduct(e.target.value)}
-                  className="pl-9"
-                />
+                <Input placeholder="Search products..." value={searchProduct} onChange={(e) => setSearchProduct(e.target.value)} className="pl-9" />
               </div>
-              <Button className="gap-2" onClick={() => toast({ title: "Coming soon", description: "Product creation will be available with Cloud backend." })}>
+              <Button className="gap-2" onClick={() => { setEditingProduct(null); setFormOpen(true); }}>
                 <Plus className="h-4 w-4" /> Add Product
               </Button>
             </div>
@@ -166,9 +176,7 @@ const Admin = () => {
                           </div>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{p.brand}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary" className="text-xs">{p.category}</Badge>
-                        </TableCell>
+                        <TableCell><Badge variant="secondary" className="text-xs">{p.category}</Badge></TableCell>
                         <TableCell className="font-medium">{formatPrice(p.price)}</TableCell>
                         <TableCell>
                           <Badge variant={p.inStock ? "default" : "destructive"} className="text-xs">
@@ -180,12 +188,24 @@ const Admin = () => {
                             <Link to={`/product/${p.id}`}>
                               <Button variant="ghost" size="icon" className="h-8 w-8"><Eye className="h-4 w-4" /></Button>
                             </Link>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toast({ title: "Coming soon", description: "Edit will be available with Cloud backend." })}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(p)}>
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => toast({ title: "Coming soon", description: "Delete will be available with Cloud backend." })}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete "{p.name}"?</AlertDialogTitle>
+                                  <AlertDialogDescription>This action cannot be undone. The product will be permanently removed.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDelete(p)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -196,18 +216,11 @@ const Admin = () => {
             </Card>
           </TabsContent>
 
-          {/* Orders Tab */}
           <TabsContent value="orders" className="space-y-4">
             <div className="relative max-w-sm">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search orders..."
-                value={searchOrder}
-                onChange={(e) => setSearchOrder(e.target.value)}
-                className="pl-9"
-              />
+              <Input placeholder="Search orders..." value={searchOrder} onChange={(e) => setSearchOrder(e.target.value)} className="pl-9" />
             </div>
-
             <Card>
               <div className="overflow-x-auto">
                 <Table>
@@ -236,16 +249,10 @@ const Admin = () => {
                         <TableCell className="font-medium">{formatPrice(o.total)}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{o.date}</TableCell>
                         <TableCell>
-                          <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium capitalize ${statusColors[o.status]}`}>
-                            {o.status}
-                          </span>
+                          <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium capitalize ${statusColors[o.status]}`}>{o.status}</span>
                         </TableCell>
                         <TableCell className="text-right">
-                          <select
-                            value={o.status}
-                            onChange={(e) => updateOrderStatus(o.id, e.target.value)}
-                            className="rounded-md border border-input bg-background px-2 py-1 text-xs"
-                          >
+                          <select value={o.status} onChange={(e) => updateOrderStatus(o.id, e.target.value)} className="rounded-md border border-input bg-background px-2 py-1 text-xs">
                             <option value="pending">Pending</option>
                             <option value="confirmed">Confirmed</option>
                             <option value="shipped">Shipped</option>
@@ -261,6 +268,13 @@ const Admin = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      <ProductFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        product={editingProduct}
+        onSave={handleSave}
+      />
     </main>
   );
 };

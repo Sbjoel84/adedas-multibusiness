@@ -1,5 +1,6 @@
 import { useParams, Link } from "react-router-dom";
-import { products, formatPrice } from "@/data/products";
+import { formatPrice } from "@/data/products";
+import { useProducts } from "@/hooks/useProducts";
 import { useCart } from "@/context/CartContext";
 import { ShoppingBag, Star, ArrowLeft, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import ProductCard from "@/components/ProductCard";
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const { products } = useProducts();
   const product = products.find((p) => p.id === id);
   const { addToCart } = useCart();
   const [qty, setQty] = useState(1);

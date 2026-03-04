@@ -1,8 +1,9 @@
 import { useState } from "react";
 import ProductCard from "@/components/ProductCard";
-import { products, categories } from "@/data/products";
+import { useProducts } from "@/hooks/useProducts";
 
 const Products = () => {
+  const { products, categories } = useProducts();
   const [activeCategory, setActiveCategory] = useState("All");
 
   const filtered = activeCategory === "All"
@@ -16,7 +17,6 @@ const Products = () => {
         <h1 className="font-display text-3xl font-bold md:text-4xl">Our Products</h1>
       </div>
 
-      {/* Category filter */}
       <div className="flex flex-wrap gap-2 mb-8">
         {categories.map((cat) => (
           <button
