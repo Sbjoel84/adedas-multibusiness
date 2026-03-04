@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
-import { ShoppingBag, Menu, X, Search } from "lucide-react";
+import { ShoppingBag, Menu, X } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import AdminLoginDialog from "@/components/AdminLoginDialog";
 
 const Navbar = () => {
   const { totalItems } = useCart();
@@ -48,6 +49,7 @@ const Navbar = () => {
               </span>
             )}
           </Link>
+          <AdminLoginDialog />
         </div>
       </div>
 
