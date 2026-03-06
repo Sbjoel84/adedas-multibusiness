@@ -112,10 +112,14 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave 
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="price">Price (₦) *</Label>
               <Input id="price" type="number" min="1" value={form.price} onChange={set("price")} placeholder="8500" required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="promoPrice">Promo Price (₦)</Label>
+              <Input id="promoPrice" type="number" min="0" value={form.promoPrice} onChange={set("promoPrice")} placeholder="e.g. 6500" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="volume">Volume / Size</Label>
