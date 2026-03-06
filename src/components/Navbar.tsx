@@ -22,8 +22,15 @@ const Navbar = () => {
         </button>
 
         {/* Logo */}
-        <Link to="/" className="font-display text-xl font-bold tracking-wide md:text-2xl text-gradient-gold">
-          ADEDAS MULTIBUSINESS
+        <Link to="/" className="flex items-center gap-2">
+          <img
+            src="/images/adedas-logo.png"
+            alt="ADEDAS MULTIBUSINESS"
+            className="h-10 w-10 rounded-full border-2 border-primary object-cover md:h-12 md:w-12"
+          />
+          <span className="font-display text-lg font-bold tracking-wide md:text-xl text-gradient-gold">
+            ADEDAS MULTIBUSINESS
+          </span>
         </Link>
 
         {/* Desktop nav */}
