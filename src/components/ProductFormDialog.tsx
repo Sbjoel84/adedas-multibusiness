@@ -38,6 +38,7 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave 
         brand: product.brand,
         category: product.category,
         price: String(product.price),
+        promoPrice: product.promoPrice ? String(product.promoPrice) : "",
         volume: product.volume,
         image: product.image,
         description: product.description,
