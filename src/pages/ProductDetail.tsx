@@ -65,7 +65,19 @@ const ProductDetail = () => {
             <span className="text-sm text-muted-foreground">{product.rating} ({product.reviews} reviews)</span>
           </div>
 
-          <p className="text-2xl font-bold">{formatPrice(product.price)}</p>
+          <div className="flex items-center gap-3">
+            {product.promoPrice ? (
+              <>
+                <p className="text-2xl font-bold text-primary">{formatPrice(product.promoPrice)}</p>
+                <p className="text-lg text-muted-foreground line-through">{formatPrice(product.price)}</p>
+                <span className="rounded-md bg-destructive/10 text-destructive text-xs font-semibold px-2 py-1">
+                  -{Math.round(((product.price - product.promoPrice) / product.price) * 100)}%
+                </span>
+              </>
+            ) : (
+              <p className="text-2xl font-bold">{formatPrice(product.price)}</p>
+            )}
+          </div>
           <p className="text-sm text-muted-foreground">{product.volume}</p>
 
           <p className="text-sm text-muted-foreground leading-relaxed">{product.description}</p>

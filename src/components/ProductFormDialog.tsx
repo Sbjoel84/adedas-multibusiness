@@ -20,6 +20,7 @@ const emptyForm = {
   brand: "ADEDAS MULTIBUSINESS",
   category: "",
   price: "",
+  promoPrice: "",
   volume: "",
   image: "",
   description: "",
