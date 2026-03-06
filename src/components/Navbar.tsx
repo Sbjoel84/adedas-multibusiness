@@ -28,8 +28,9 @@ const Navbar = () => {
             alt="ADEDAS MULTIBUSINESS"
             className="h-10 w-10 rounded-full border-2 border-primary object-cover md:h-12 md:w-12"
           />
-          <span className="font-display text-lg font-bold tracking-wide md:text-xl text-gradient-gold">
-            ADEDAS MULTIBUSINESS
+          <span className="flex flex-col leading-tight" style={{ fontFamily: 'Tahoma, sans-serif' }}>
+            <span className="text-sm font-bold tracking-widest md:text-base text-gradient-gold">ADEDAS</span>
+            <span className="text-[10px] font-semibold tracking-wide md:text-xs text-gradient-gold">Multibusiness</span>
           </span>
         </Link>
 
