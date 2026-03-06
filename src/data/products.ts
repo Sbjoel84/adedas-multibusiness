@@ -4,6 +4,7 @@ export interface Product {
   brand: string;
   category: string;
   price: number;
+  promoPrice?: number | null;
   volume: string;
   image: string;
   description: string;

@@ -20,6 +20,7 @@ const emptyForm = {
   brand: "ADEDAS MULTIBUSINESS",
   category: "",
   price: "",
+  promoPrice: "",
   volume: "",
   image: "",
   description: "",
@@ -37,6 +38,7 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave 
         brand: product.brand,
         category: product.category,
         price: String(product.price),
+        promoPrice: product.promoPrice ? String(product.promoPrice) : "",
         volume: product.volume,
         image: product.image,
         description: product.description,
@@ -66,11 +68,13 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave 
     const price = parseInt(form.price, 10);
     if (!form.name || !form.category || isNaN(price) || price <= 0) return;
 
+    const promoPrice = form.promoPrice ? parseInt(form.promoPrice, 10) : null;
     onSave({
       name: form.name.trim(),
       brand: form.brand.trim() || "ADEDAS MULTIBUSINESS",
       category: form.category.trim(),
       price,
+      promoPrice: promoPrice && promoPrice > 0 && promoPrice < price ? promoPrice : null,
       volume: form.volume.trim(),
       image: form.image || "/placeholder.svg",
       description: form.description.trim(),
@@ -108,10 +112,14 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave 
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="price">Price (₦) *</Label>
               <Input id="price" type="number" min="1" value={form.price} onChange={set("price")} placeholder="8500" required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="promoPrice">Promo Price (₦)</Label>
+              <Input id="promoPrice" type="number" min="0" value={form.promoPrice} onChange={set("promoPrice")} placeholder="e.g. 6500" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="volume">Volume / Size</Label>

@@ -56,9 +56,16 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
             </div>
             <span className="text-xs text-muted-foreground">({product.reviews})</span>
           </div>
-          <p className="font-body text-sm font-bold text-foreground">
-            {formatPrice(product.price)}
-          </p>
+          <div className="flex items-center gap-1.5">
+            {product.promoPrice ? (
+              <>
+                <p className="font-body text-sm font-bold text-primary">{formatPrice(product.promoPrice)}</p>
+                <p className="font-body text-xs text-muted-foreground line-through">{formatPrice(product.price)}</p>
+              </>
+            ) : (
+              <p className="font-body text-sm font-bold text-foreground">{formatPrice(product.price)}</p>
+            )}
+          </div>
         </div>
       </Link>
     </motion.div>
