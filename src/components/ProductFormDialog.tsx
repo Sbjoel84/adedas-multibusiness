@@ -68,11 +68,13 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave 
     const price = parseInt(form.price, 10);
     if (!form.name || !form.category || isNaN(price) || price <= 0) return;
 
+    const promoPrice = form.promoPrice ? parseInt(form.promoPrice, 10) : null;
     onSave({
       name: form.name.trim(),
       brand: form.brand.trim() || "ADEDAS MULTIBUSINESS",
       category: form.category.trim(),
       price,
+      promoPrice: promoPrice && promoPrice > 0 && promoPrice < price ? promoPrice : null,
       volume: form.volume.trim(),
       image: form.image || "/placeholder.svg",
       description: form.description.trim(),
