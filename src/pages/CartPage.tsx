@@ -1,13 +1,30 @@
+import { useState } from "react";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/data/products";
-import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft, CreditCard, Building2, User, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
+// Payment account details
+const PAYMENT_ACCOUNT = {
+  accountNumber: "3046110946",
+  bankName: "First Bank",
+  accountName: "Adedamola Olayemi Daramola",
+};
+
 const CartPage = () => {
   const { items, updateQuantity, removeFromCart, totalPrice, clearCart } = useCart();
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    toast.success("Account number copied!");
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   if (items.length === 0) {
     return (
@@ -88,12 +105,75 @@ const CartPage = () => {
           <Button
             className="w-full mt-6 bg-gradient-gold text-primary-foreground hover:opacity-90"
             size="lg"
-            onClick={() => toast.info("Checkout coming soon!")}
+            onClick={() => setShowCheckout(true)}
           >
             Proceed to Checkout
           </Button>
         </div>
       </div>
+
+      {/* Checkout Modal with Payment Details */}
+      {showCheckout && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-xl max-w-md w-full p-6"
+          >
+            <h2 className="font-display text-xl font-bold mb-4">Complete Your Order</h2>
+            
+            <div className="bg-amber-50 rounded-lg p-4 mb-4">
+              <p className="text-sm text-amber-800 mb-3 font-medium">Make payment to this account:</p>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Account Number:</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-amber-900">{PAYMENT_ACCOUNT.accountNumber}</span>
+                    <button 
+                      onClick={() => copyToClipboard(PAYMENT_ACCOUNT.accountNumber)}
+                      className="p-1 hover:bg-amber-100 rounded"
+                      title="Copy account number"
+                    >
+                      {copied ? <Check size={14} className="text-green-600" /> : <Copy size={14} className="text-amber-700" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Bank:</span>
+                  <span className="font-medium text-amber-900">{PAYMENT_ACCOUNT.bankName}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Account Name:</span>
+                  <span className="font-medium text-amber-900">{PAYMENT_ACCOUNT.accountName}</span>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground mb-4">
+              After making payment, send your payment confirmation to our WhatsApp for order processing.
+            </p>
+
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowCheckout(false)}
+              >
+                Close
+              </Button>
+              <Button
+                className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+                onClick={() => {
+                  window.open("https://wa.me/2348036262488?text=I've+made+payment+for+my+order", "_blank");
+                  setShowCheckout(false);
+                }}
+              >
+                Contact on WhatsApp
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </main>
   );
 };

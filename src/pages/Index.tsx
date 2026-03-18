@@ -136,7 +136,7 @@ const Index = () => {
       <section className="bg-gradient-cream">
         <div className="container py-16 md:py-24">
           <div className="text-center mb-12">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary mb-2">Customer Love</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary mb-2">Customer Reviews</p>
             <h2 className="font-display text-2xl font-bold md:text-3xl">Testimonials</h2>
           </div>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">

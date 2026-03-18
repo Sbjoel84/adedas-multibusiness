@@ -135,7 +135,7 @@ export const products: Product[] = [
     price: 12000,
     volume: "Combo Pack",
     image: "/images/shea-butter-gift-set.jpeg",
-    description: "A beautifully packaged high-quality gift set featuring Jimpo-Ori Shea Butter, ointment, and a baby towel. Perfect for gifting to new mothers or anyone who loves natural skincare. NAFDAC approved.",
+    description: "A beautifully packaged high-quality gift set featuring Jimpo-Ori Shea Butter, ointment, and a baby towel. Perfect for gifting to new mothers or anyone who appreciates natural skincare. NAFDAC approved.",
     rating: 4.8,
     reviews: 178,
     tags: ["Gift Set", "Baby Care", "Premium"],

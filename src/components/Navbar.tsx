@@ -45,6 +45,9 @@ const Navbar = () => {
           <Link to="/about" className="text-sm font-medium tracking-wide text-muted-foreground hover:text-foreground transition-colors">
             About
           </Link>
+          <Link to="/contact" className="text-sm font-medium tracking-wide text-muted-foreground hover:text-foreground transition-colors">
+            Contact
+          </Link>
         </nav>
 
         {/* Actions */}
@@ -74,6 +77,7 @@ const Navbar = () => {
               <Link to="/" onClick={() => setMobileOpen(false)} className="text-sm font-medium py-2">Home</Link>
               <Link to="/products" onClick={() => setMobileOpen(false)} className="text-sm font-medium py-2">Shop</Link>
               <Link to="/about" onClick={() => setMobileOpen(false)} className="text-sm font-medium py-2">About</Link>
+              <Link to="/contact" onClick={() => setMobileOpen(false)} className="text-sm font-medium py-2">Contact</Link>
             </div>
           </motion.nav>
         )}
