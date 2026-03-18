@@ -5,7 +5,7 @@ import { useProducts } from "@/hooks/useProducts";
 import ProductFormDialog from "@/components/ProductFormDialog";
 import {
   Package, ShoppingCart, DollarSign, TrendingUp,
-  Edit, Trash2, Plus, Eye, Download, ArrowLeft, Search
+  Edit, Trash2, Plus, Eye, Download, ArrowLeft, Search, Lock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +45,14 @@ const Admin = () => {
   const [orders, setOrders] = useState(mockOrders);
   const [formOpen, setFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
+
+  // Get admin token from localStorage
+  const adminToken = localStorage.getItem('adminToken');
 
   const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
   const pendingOrders = orders.filter(o => o.status === "pending").length;
@@ -97,6 +105,51 @@ const Admin = () => {
     toast({ title: "Product deleted", description: `${product.name} has been removed.` });
   };
 
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast({ title: "Error", description: "Please fill in all fields", variant: "destructive" });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({ title: "Error", description: "New passwords do not match", variant: "destructive" });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({ title: "Error", description: "Password must be at least 6 characters", variant: "destructive" });
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/auth/change-password`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`
+        },
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({ title: "Success", description: "Password changed successfully" });
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+        setSettingsOpen(false);
+      } else {
+        toast({ title: "Error", description: data.error || "Failed to change password", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to change password", variant: "destructive" });
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
   const stats = [
     { label: "Total Revenue", value: formatPrice(totalRevenue), icon: DollarSign, accent: "text-green-600" },
     { label: "Total Orders", value: orders.length, icon: ShoppingCart, accent: "text-blue-600" },
@@ -140,6 +193,7 @@ const Admin = () => {
           <TabsList className="w-full justify-start">
             <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
+            <TabsTrigger value="settings" onClick={() => setSettingsOpen(true)}>Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="products" className="space-y-4">
@@ -264,6 +318,53 @@ const Admin = () => {
                   </TableBody>
                 </Table>
               </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="settings" className="space-y-4">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <Lock className="h-5 w-5 text-primary" />
+                  <h3 className="text-lg font-semibold">Change Password</h3>
+                </div>
+                <div className="space-y-4 max-w-md">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Current Password</label>
+                    <Input
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="Enter current password"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">New Password</label>
+                    <Input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Enter new password"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Confirm New Password</label>
+                    <Input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm new password"
+                    />
+                  </div>
+                  <Button
+                    onClick={handleChangePassword}
+                    disabled={changingPassword}
+                    className="w-full"
+                  >
+                    {changingPassword ? "Changing Password..." : "Change Password"}
+                  </Button>
+                </div>
+              </CardContent>
             </Card>
           </TabsContent>
         </Tabs>

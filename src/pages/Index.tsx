@@ -46,11 +46,11 @@ const Index = () => {
         <div className="container grid grid-cols-2 gap-6 md:grid-cols-4 md:gap-8">
           {trustBadges.map((badge, i) => (
             <motion.div key={badge.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="text-center space-y-3">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-secondary">
-                <badge.icon size={24} className="text-primary" />
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-secondary">
+                <badge.icon size={28} className="text-primary" />
               </div>
-              <h3 className="font-display text-sm font-semibold">{badge.title}</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">{badge.desc}</p>
+              <h3 className="font-display text-base font-semibold">{badge.title}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{badge.desc}</p>
             </motion.div>
           ))}
         </div>

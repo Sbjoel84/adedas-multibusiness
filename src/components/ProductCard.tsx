@@ -27,7 +27,7 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
       transition={{ duration: 0.4, delay: index * 0.1 }}
     >
       <Link to={`/product/${product.id}`} className="group block">
-        <div className="relative overflow-hidden rounded-lg bg-secondary aspect-[3/4]">
+        <div className="relative overflow-hidden rounded-xl bg-secondary aspect-square">
           <img
             src={product.image}
             alt={product.name}
