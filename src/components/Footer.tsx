@@ -80,7 +80,7 @@ const Footer = () => (
           <div className="flex flex-col gap-2 text-sm text-muted-foreground">
             <span className="flex items-center gap-2">
               <Mail size={14} className="text-lime-600" />
-              info@milkandhoneygold.com
+              adedamoladaramola14@gmail.com
             </span>
             <span className="flex items-center gap-2">
               <Phone size={14} className="text-lime-600" />

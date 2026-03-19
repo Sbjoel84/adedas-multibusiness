@@ -3,11 +3,11 @@ import { Sparkles, Leaf, Star, Award, Heart, Shield, TrendingUp, Quote } from "l
 import { Link } from "react-router-dom";
 
 const values = [
-  { icon: Sparkles, title: "Quality Products", desc: "Carefully formulated to deliver nourishment, hydration, and luxury skincare experiences using premium ingredients." },
-  { icon: Heart, title: "Customer Trust", desc: "We prioritize customer satisfaction and strive to provide reliable service and products you can trust." },
-  { icon: Shield, title: "Honest Business", desc: "Transparent practices and genuine relationships built on integrity and trust." },
-  { icon: TrendingUp, title: "Continuous Improvement", desc: "Always evolving and innovating to bring you the best skincare solutions." },
-  { icon: Leaf, title: "Natural Ingredients", desc: "Premium ingredients that combine purity, nourishment, and luxury in every product." },
+  { icon: Sparkles, title: "Quality", desc: "We are committed to delivering high-quality products that combine purity, nourishment, and luxury." },
+  { icon: Heart, title: "Customer satisfaction", desc: "We prioritize customer satisfaction and strive to provide reliable service, fast delivery, and products our customers can trust." },
+  { icon: Shield, title: "Integrity", desc: "Honest business practices and transparent relationships built on integrity and trust." },
+  { icon: TrendingUp, title: "Innovation", desc: "Continuous improvement and innovation to bring you the best skincare solutions." },
+  { icon: Leaf, title: "Natural ingredients", desc: "Premium ingredients that combine purity, nourishment, and luxury in every product." },
 ];
 
 const testimonials = [
@@ -54,11 +54,11 @@ const About = () => {
           >
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-amber-300 mb-4">About Us</p>
             <h1 className="font-display text-4xl md:text-5xl font-bold mb-6">
-              ADEDAS MULTIBUSINESS
+              ADEDAS MULTIBUSINESS LTD
             </h1>
             <p className="text-lg md:text-xl text-gray-200 leading-relaxed">
-              A beauty and lifestyle brand dedicated to providing high-quality skincare products 
-              designed to nourish, protect, and enhance natural beauty.
+              A beauty, wellness and lifestyle brand dedicated to providing high-quality products 
+              designed to nourish, protect, and enhance natural beauty and wellness.
             </p>
           </motion.div>
         </div>
@@ -73,7 +73,7 @@ const About = () => {
             viewport={{ once: true }}
             className="text-center mb-12"
           >
-            <h2 className="font-display text-3xl font-bold text-primary mb-4">Our Story</h2>
+            <h2 className="font-display text-3xl font-bold text-primary mb-4">Company Story</h2>
             <div className="w-20 h-1 bg-amber-400 mx-auto rounded-full" />
           </motion.div>
           <motion.div 
@@ -83,10 +83,7 @@ const About = () => {
             className="prose prose-lg mx-auto text-center"
           >
             <p className="text-muted-foreground leading-relaxed">
-              ADEDAS MULTIBUSINESS was founded from a passion for skincare and the desire to provide 
-              nourishing products made with carefully selected ingredients. What began as a small idea 
-              quickly grew into a trusted brand serving customers who value quality and luxury skincare. 
-              We believe that everyone deserves access to premium skincare that promotes healthy and glowing skin.
+              ADEDAS MULTIBUSINESS was founded from a passion for skincare and healthy lifestyle and the desire to provide nourishing products made with carefully selected ingredients. What began as a small idea quickly grew into a trusted brand serving customers who value quality and luxury skincare.
             </p>
           </motion.div>
         </div>
@@ -132,7 +129,7 @@ const About = () => {
           viewport={{ once: true }}
           className="text-center mb-12"
         >
-          <h2 className="font-display text-3xl font-bold text-primary mb-4">Meet Our Founder</h2>
+          <h2 className="font-display text-3xl font-bold text-primary mb-4">Founder / MD / CEO Profile</h2>
           <div className="w-20 h-1 bg-amber-400 mx-auto rounded-full" />
         </motion.div>
         
@@ -162,12 +159,13 @@ const About = () => {
               className="text-center md:text-left"
             >
               <h3 className="font-display text-2xl font-bold text-primary mb-1">Mrs. Adedamola Daramola</h3>
-              <p className="text-amber-600 font-medium mb-6">Founder & CEO</p>
+              <p className="text-amber-600 font-medium mb-6">Entrepreneur</p>
+              <p className="text-amber-600 font-medium mb-2">Founder & CEO</p>
               <p className="text-muted-foreground leading-relaxed">
-                Mrs. Adedamola Daramola is the founder of ADEDAS MULTIBUSINESS. With a passion for 
-                skincare and entrepreneurship, she established the company to provide high-quality 
-                skincare solutions that promote healthy and glowing skin. Her vision is to build a 
-                brand that combines natural ingredients with luxury skincare experiences.
+                She is married with lovely children, a seasoned banker and marketer, holds Masters degree from Akinola Ladoke University, Bsc and HND in Accounting
+              </p>
+              <p className="text-muted-foreground leading-relaxed mt-4">
+                Mrs. Adedamola is the founder of ADEDAS MULTIBUSINESS. With a passion for skincare, wellness Beauty and entrepreneurship, she established the company to provide high-quality skincare solutions that promote healthy and glowing skin and healthy lifestyle. Her vision is to build a brand that combines natural ingredients with luxury lifestyle experiences.
               </p>
             </motion.div>
           </div>
@@ -183,7 +181,7 @@ const About = () => {
             viewport={{ once: true }}
             className="text-center mb-12"
           >
-            <h2 className="font-display text-3xl font-bold text-primary mb-4">Our Core Values</h2>
+            <h2 className="font-display text-3xl font-bold text-primary mb-4">Core Values</h2>
             <div className="w-20 h-1 bg-amber-400 mx-auto rounded-full" />
           </motion.div>
 
@@ -222,10 +220,10 @@ const About = () => {
 
         <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
           {[
-            { title: "Quality Products", desc: "Carefully formulated with premium ingredients" },
-            { title: "Natural & Safe", desc: "Dermatologically tested and pH balanced" },
-            { title: "Customer Commitment", desc: "Fast delivery and reliable service you can trust" },
-            { title: "Brand Promise", desc: "Combining purity, nourishment, and luxury in every product" },
+            { title: "Quality products", desc: "Carefully formulated with premium ingredients" },
+            { title: "Customer trust", desc: "Dermatologically tested and pH balanced" },
+            { title: "Customer Commitment", desc: "We prioritize customer satisfaction and strive to provide reliable service, fast delivery, and products our customers can trust." },
+            { title: "Brand Promise", desc: "At ADEDAS MULTIBUSINESS, we are committed to delivering high-quality products that combine purity, nourishment, and luxury." },
           ].map((item, i) => (
             <motion.div
               key={item.title}

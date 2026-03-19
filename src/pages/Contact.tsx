@@ -195,7 +195,7 @@ const Contact = () => {
                 </a>
 
                 <a 
-                  href="mailto:info@milkandhoneygold.com"
+                  href="mailto:adedamoladaramola14@gmail.com"
                   className="flex items-start gap-4 p-4 rounded-xl bg-amber-50 hover:bg-amber-100 transition-colors"
                 >
                   <div className="flex-shrink-0 w-12 h-12 rounded-full bg-amber-400 flex items-center justify-center">
@@ -203,7 +203,7 @@ const Contact = () => {
                   </div>
                   <div>
                     <p className="font-medium text-gray-700">Email</p>
-                    <p className="text-amber-700">info@milkandhoneygold.com</p>
+                    <p className="text-amber-700">adedamoladaramola14@gmail.com</p>
                   </div>
                 </a>
 
