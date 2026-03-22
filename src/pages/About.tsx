@@ -158,14 +158,12 @@ const About = () => {
               viewport={{ once: true }}
               className="text-center md:text-left"
             >
-              <h3 className="font-display text-2xl font-bold text-primary mb-1">Mrs. Adedamola Daramola</h3>
-              <p className="text-amber-600 font-medium mb-6">Entrepreneur</p>
+              <p className="font-semibold text-primary mb-1">Name: Mrs. Adedamola Daramola</p>
+              <p className="text-amber-600 font-medium mb-1">Title: Entrepreneur</p>
               <p className="text-amber-600 font-medium mb-2">Founder & CEO</p>
+              <p className="text-amber-600 font-medium mb-4">Bio:</p>
               <p className="text-muted-foreground leading-relaxed">
-                She is married with lovely children, a seasoned banker and marketer, holds Masters degree from Akinola Ladoke University, Bsc and HND in Accounting
-              </p>
-              <p className="text-muted-foreground leading-relaxed mt-4">
-                Mrs. Adedamola is the founder of ADEDAS MULTIBUSINESS. With a passion for skincare, wellness Beauty and entrepreneurship, she established the company to provide high-quality skincare solutions that promote healthy and glowing skin and healthy lifestyle. Her vision is to build a brand that combines natural ingredients with luxury lifestyle experiences.
+                The founder & CEO of ADEDAS MULTIBSINESS LTD, Mrs Adedamola Daramola is a young progressive entrepreneur with unique taste for quality and excellence. She is a seasoned banker with over two decades of work experience in banking sector managing high end customers, private & public portfolios, FMCG industries, multinationals etc. She is proficient in system design and market development. A highly industrious and well- sought- after marketing and financial expert. She holds a BSc degree in accounting. She is a Chartered Economist and also holds a Master of Business Administration (MBA) degree. She is happily married with children. The establishment of ADEDAS was born out of her passion for skincare, wellness, beauty and entrepreneurship. A platform that offers a unique opportunity to provide high-quality skincare products/solutions that guarantee and promote natural and healthy skin. Her vision is to build a brand that combines natural ingredients with luxury lifestyle experiences.
               </p>
             </motion.div>
           </div>
