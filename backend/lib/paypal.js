@@ -7,15 +7,24 @@ class PayPalClient {
   }
 
   getEnvironment() {
-    const baseUrl = process.env.PAYPAL_BASE_URL;
+    const clientId = process.env.PAYPAL_CLIENT_ID;
+    const clientSecret = process.env.PAYPAL_SECRET;
+    const baseUrl = process.env.PAYPAL_BASE_URL || 'https://api-m.sandbox.paypal.com';
 
-    if (baseUrl === 'https://api-m.sandbox.paypal.com') {
-      return Environment.Sandbox;
-    } else if (baseUrl === 'https://api-m.paypal.com') {
-      return Environment.Live;
+    if (!clientId || !clientSecret || clientId === 'your_client_id_here' || clientSecret === 'your_secret_key_here') {
+      console.warn('PayPal credentials not properly configured. Using sandbox mode.');
+    }
+
+    if (baseUrl === 'https://api-m.paypal.com') {
+      return new Environment({
+        clientId: clientId || '',
+        clientSecret: clientSecret || '',
+      });
     } else {
-      console.warn('PAYPAL_BASE_URL is not set to a known PayPal endpoint. Defaulting to sandbox.');
-      return Environment.Sandbox;
+      return new Environment({
+        clientId: clientId || '',
+        clientSecret: clientSecret || '',
+      });
     }
   }
 
