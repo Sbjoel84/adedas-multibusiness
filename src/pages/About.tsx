@@ -71,6 +71,18 @@ const About = () => {
             initial={{ opacity: 0, y: 20 }} 
             whileInView={{ opacity: 1, y: 0 }} 
             viewport={{ once: true }}
+            className="text-center mb-8"
+          >
+            <img 
+              src="/images/Adedas Logo.jpeg" 
+              alt="Adedas Logo" 
+              className="w-48 h-48 mx-auto object-contain rounded-2xl shadow-lg"
+            />
+          </motion.div>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }} 
+            whileInView={{ opacity: 1, y: 0 }} 
+            viewport={{ once: true }}
             className="text-center mb-12"
           >
             <h2 className="font-display text-3xl font-bold text-primary mb-4">Company Story</h2>
