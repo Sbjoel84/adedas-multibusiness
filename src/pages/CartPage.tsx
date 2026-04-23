@@ -40,7 +40,8 @@ const CartPage = () => {
   });
 
   const handleCardInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let { name, value } = e.target;
+    const { name } = e.target;
+    let value = e.target.value;
     
     if (name === "cardNumber") {
       value = value.replace(/\D/g, "").slice(0, 16);
@@ -134,15 +135,15 @@ const CartPage = () => {
                   <p className="text-sm font-bold mt-1">{formatPrice(item.product.price)}</p>
                 </div>
                 <div className="flex flex-col items-end justify-between">
-                  <button onClick={() => { removeFromCart(item.product.id); toast("Removed from cart"); }} className="text-muted-foreground hover:text-destructive transition-colors">
+                  <button type="button" onClick={() => { removeFromCart(item.product.id); toast("Removed from cart"); }} className="text-muted-foreground hover:text-destructive transition-colors" aria-label="Remove item from cart">
                     <Trash2 size={14} />
                   </button>
                   <div className="flex items-center rounded border border-border">
-                    <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)} className="px-2 py-1 hover:bg-muted transition-colors">
+                    <button type="button" onClick={() => updateQuantity(item.product.id, item.quantity - 1)} className="px-2 py-1 hover:bg-muted transition-colors" aria-label="Decrease quantity">
                       <Minus size={12} />
                     </button>
                     <span className="px-2 text-xs font-medium">{item.quantity}</span>
-                    <button onClick={() => updateQuantity(item.product.id, item.quantity + 1)} className="px-2 py-1 hover:bg-muted transition-colors">
+                    <button type="button" onClick={() => updateQuantity(item.product.id, item.quantity + 1)} className="px-2 py-1 hover:bg-muted transition-colors" aria-label="Increase quantity">
                       <Plus size={12} />
                     </button>
                   </div>
@@ -189,7 +190,7 @@ const CartPage = () => {
           >
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-display text-xl font-bold">Complete Your Order</h2>
-              <button onClick={closeCheckout} className="p-1 hover:bg-gray-100 rounded">
+              <button type="button" onClick={closeCheckout} className="p-1 hover:bg-gray-100 rounded" aria-label="Close checkout">
                 <X size={20} />
               </button>
             </div>

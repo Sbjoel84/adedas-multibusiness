@@ -3,9 +3,10 @@ import { Link } from "react-router-dom";
 import { formatPrice, Product } from "@/data/products";
 import { useProducts } from "@/hooks/useProducts";
 import ProductFormDialog from "@/components/ProductFormDialog";
+import { VisitorsDashboard } from "@/components/VisitorsDashboard";
 import {
   Package, ShoppingCart, DollarSign, TrendingUp,
-  Edit, Trash2, Plus, Eye, Download, ArrowLeft, Search, Lock
+  Edit, Trash2, Plus, Eye, Download, ArrowLeft, Search, Lock, BarChart2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -193,6 +194,9 @@ const Admin = () => {
           <TabsList className="w-full justify-start">
             <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
+            <TabsTrigger value="visitors" className="gap-1.5">
+              <BarChart2 className="h-3.5 w-3.5" />Visitors
+            </TabsTrigger>
             <TabsTrigger value="settings" onClick={() => setSettingsOpen(true)}>Settings</TabsTrigger>
           </TabsList>
 
@@ -306,7 +310,13 @@ const Admin = () => {
                           <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium capitalize ${statusColors[o.status]}`}>{o.status}</span>
                         </TableCell>
                         <TableCell className="text-right">
-                          <select value={o.status} onChange={(e) => updateOrderStatus(o.id, e.target.value)} className="rounded-md border border-input bg-background px-2 py-1 text-xs">
+                          <select
+                            value={o.status}
+                            onChange={(e) => updateOrderStatus(o.id, e.target.value)}
+                            title={`Update status for ${o.id}`}
+                            aria-label={`Update status for ${o.id}`}
+                            className="rounded-md border border-input bg-background px-2 py-1 text-xs"
+                          >
                             <option value="pending">Pending</option>
                             <option value="confirmed">Confirmed</option>
                             <option value="shipped">Shipped</option>
@@ -319,6 +329,10 @@ const Admin = () => {
                 </Table>
               </div>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="visitors" className="space-y-4">
+            <VisitorsDashboard />
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-4">
