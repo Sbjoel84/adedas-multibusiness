@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { formatPrice, Product } from "@/data/products";
 import { useProducts } from "@/hooks/useProducts";
@@ -8,6 +8,7 @@ import {
   Package, ShoppingCart, DollarSign, TrendingUp,
   Edit, Trash2, Plus, Eye, Download, ArrowLeft, Search, Lock, BarChart2
 } from "lucide-react";
+import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,29 +22,62 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import {
+  listOrders,
+  subscribeOrders,
+  updateOrderStatus as updateOrderFulfillment,
+  type OrderRecord,
+  type OrderStatus,
+} from "@/lib/orders";
+import { subscribeBookings, listBookings, updateBookingStatus, type BookingRecord } from "@/lib/bookings";
 
-const mockOrders = [
-  { id: "ORD-001", customer: "Adaeze Obi", email: "adaeze@email.com", items: 3, total: 23200, status: "delivered", date: "2026-02-28" },
-  { id: "ORD-002", customer: "Chukwuma Eze", email: "chukwuma@email.com", items: 1, total: 8500, status: "shipped", date: "2026-03-01" },
-  { id: "ORD-003", customer: "Fatima Bello", email: "fatima@email.com", items: 2, total: 13000, status: "confirmed", date: "2026-03-01" },
-  { id: "ORD-004", customer: "Grace Adeyemi", email: "grace@email.com", items: 4, total: 37500, status: "pending", date: "2026-03-02" },
-  { id: "ORD-005", customer: "Ibrahim Musa", email: "ibrahim@email.com", items: 1, total: 15500, status: "pending", date: "2026-03-02" },
-  { id: "ORD-006", customer: "Ngozi Aniemeka", email: "ngozi@email.com", items: 2, total: 14000, status: "delivered", date: "2026-02-27" },
-];
-
-const statusColors: Record<string, string> = {
+const fulfillmentColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
   confirmed: "bg-blue-100 text-blue-800 border-blue-200",
   shipped: "bg-purple-100 text-purple-800 border-purple-200",
   delivered: "bg-green-100 text-green-800 border-green-200",
+  cancelled: "bg-red-100 text-red-800 border-red-200",
 };
+
+const paymentColors: Record<string, string> = {
+  pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
+  paid: "bg-green-100 text-green-800 border-green-200",
+  failed: "bg-red-100 text-red-800 border-red-200",
+  refunded: "bg-gray-100 text-gray-800 border-gray-200",
+};
+
+function formatOrderDate(value: string) {
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function orderItemCount(order: OrderRecord) {
+  return order.items.reduce((sum, item) => sum + item.quantity, 0);
+}
+
+function csvEscape(value: string | number) {
+  const text = String(value ?? "");
+  if (/[",\n]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
+  return text;
+}
 
 const Admin = () => {
   const { toast } = useToast();
   const { products, addProduct, updateProduct, deleteProduct } = useProducts();
   const [searchProduct, setSearchProduct] = useState("");
   const [searchOrder, setSearchOrder] = useState("");
-  const [orders, setOrders] = useState(mockOrders);
+  const [orders, setOrders] = useState<OrderRecord[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(true);
+  const [ordersError, setOrdersError] = useState("");
+  const [bookings, setBookings] = useState<BookingRecord[]>([]);
+  const [bookingsLoading, setBookingsLoading] = useState(true);
+  const [bookingsError, setBookingsError] = useState("");
+  const [searchBooking, setSearchBooking] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -52,48 +86,228 @@ const Admin = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
 
-  // Get admin token from localStorage
   const adminToken = localStorage.getItem('adminToken');
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+
+  const loadOrders = useCallback(async () => {
+    setOrdersLoading(true);
+    setOrdersError("");
+    try {
+      const liveOrders = await listOrders();
+      setOrders(liveOrders);
+    } catch (error: any) {
+      console.error(error);
+      setOrdersError(error?.message ?? "Unable to load live orders. Check Supabase configuration and RLS policies.");
+    } finally {
+      setOrdersLoading(false);
+    }
+  }, []);
+
+  const loadBookings = useCallback(async () => {
+    setBookingsLoading(true);
+    setBookingsError("");
+    try {
+      const rows = await listBookings();
+      setBookings(rows);
+    } catch (err: any) {
+      console.error(err);
+      setBookingsError(err?.message ?? "Unable to load bookings. Check Supabase configuration and RLS policies.");
+    } finally {
+      setBookingsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
+    const granted = Notification.permission === 'granted';
+    setNotificationsEnabled(granted);
+    if (granted) localStorage.setItem('adminNotifications', 'granted');
+  }, []);
+
+  async function requestNotificationsPermission() {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      toast({ title: 'Not supported', description: 'Your browser does not support desktop notifications.', variant: 'destructive' });
+      return;
+    }
+
+    if (Notification.permission === 'denied') {
+      toast({
+        title: 'Notifications are blocked',
+        description: 'Click the lock icon (🔒) in your browser address bar → Site settings → Allow Notifications.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (Notification.permission === 'granted') {
+      localStorage.setItem('adminNotifications', 'granted');
+      setNotificationsEnabled(true);
+      toast({ title: 'Notifications are already enabled' });
+      return;
+    }
+
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        localStorage.setItem('adminNotifications', 'granted');
+        setNotificationsEnabled(true);
+        toast({ title: 'Notifications enabled', description: 'You will be alerted for new orders and bookings.' });
+      } else {
+        localStorage.removeItem('adminNotifications');
+        setNotificationsEnabled(false);
+        toast({ title: 'Notifications denied', description: 'You can allow them later via browser site settings.', variant: 'destructive' });
+      }
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Error', description: 'Unable to request notification permission.', variant: 'destructive' });
+    }
+  }
+
+  function sendBrowserNotification(title: string, body: string) {
+    if (!notificationsEnabled) return;
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
+
+    try {
+      const n = new Notification(title, { body, tag: 'adedas-admin', renotify: true });
+      n.onclick = () => { try { window.focus(); } catch (e) {} };
+    } catch (err) {
+      console.error('Notification error', err);
+    }
+  }
+
+  useEffect(() => {
+    loadOrders();
+    const unsubscribe = subscribeOrders((event) => {
+      if (event.type === "DELETE") {
+        setOrders((prev) => prev.filter((order) => order.id !== event.order.id));
+        return;
+      }
+
+        setOrders((prev) => {
+          const exists = prev.some((order) => order.id === event.order.id);
+          if (exists) {
+            return prev.map((order) => order.id === event.order.id ? event.order : order);
+          }
+          // new order inserted -> show admin toast notification
+          if (event.type === "INSERT") {
+            try {
+              const title = "New order received";
+              const desc = `${event.order.order_number} — ${event.order.customer_name}`;
+              toast({ title, description: desc });
+              sendBrowserNotification(title, desc);
+            } catch (err) {
+              // ignore toast errors
+            }
+          }
+          return [event.order, ...prev];
+        });
+    });
+
+    return unsubscribe;
+  }, [loadOrders]);
+
+  useEffect(() => {
+    loadBookings();
+    const unsubscribeBookings = subscribeBookings((event) => {
+      if (event.type === 'DELETE') {
+        setBookings((prev) => prev.filter((b) => b.id !== event.booking.id));
+        return;
+      }
+
+      setBookings((prev) => {
+        const exists = prev.some((b) => b.id === event.booking.id);
+        if (exists) return prev.map((b) => b.id === event.booking.id ? event.booking : b);
+
+        // show toast and desktop notification for new booking
+        if (event.type === 'INSERT') {
+          try {
+            const title = 'New booking received';
+            const desc = `${event.booking.booking_number} — ${event.booking.customer_name}`;
+            try { toast({ title, description: desc }); } catch(e){}
+            sendBrowserNotification(title, desc);
+          } catch (e) {}
+        }
+
+        return [event.booking, ...prev];
+      });
+    });
+
+    return unsubscribeBookings;
+  }, [loadBookings]);
 
   const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
-  const pendingOrders = orders.filter(o => o.status === "pending").length;
+  const pendingOrders = orders.filter(o => o.fulfillment_status === "pending").length;
 
-  const filteredProducts = products.filter(p =>
+  const filteredProducts = useMemo(() => products.filter(p =>
     p.name.toLowerCase().includes(searchProduct.toLowerCase()) ||
     p.brand.toLowerCase().includes(searchProduct.toLowerCase())
-  );
+  ), [products, searchProduct]);
 
-  const filteredOrders = orders.filter(o =>
-    o.customer.toLowerCase().includes(searchOrder.toLowerCase()) ||
-    o.id.toLowerCase().includes(searchOrder.toLowerCase())
-  );
+  const filteredOrders = useMemo(() => orders.filter(o => {
+    const searchable = [
+      o.order_number,
+      o.customer_name,
+      o.customer_email,
+      o.customer_phone,
+    ].join(" ").toLowerCase();
+    return searchable.includes(searchOrder.toLowerCase());
+  }), [orders, searchOrder]);
 
-  const updateOrderStatus = (orderId: string, newStatus: string) => {
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
-    toast({ title: "Order updated", description: `${orderId} status changed to ${newStatus}` });
+  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    const previousOrders = orders;
+    const status = newStatus as OrderStatus;
+
+    setOrders((prev) => prev.map((order) => order.id === orderId ? { ...order, fulfillment_status: status } : order));
+
+    try {
+      const updated = await updateOrderFulfillment(orderId, status);
+      setOrders((prev) => prev.map((order) => order.id === updated.id ? updated : order));
+      toast({ title: "Order updated", description: `${updated.order_number} status changed to ${status}` });
+    } catch (error) {
+      console.error(error);
+      setOrders(previousOrders);
+      toast({ title: "Update failed", description: "Unable to update live order status.", variant: "destructive" });
+    }
   };
 
   const handleExport = () => {
     const csv = [
-      "Order ID,Customer,Email,Items,Total,Status,Date",
-      ...orders.map(o => `${o.id},${o.customer},${o.email},${o.items},${o.total},${o.status},${o.date}`)
+      "Order ID,Customer,Email,Phone,Items,Total,Payment,Fulfillment,Date,Reference",
+      ...filteredOrders.map(o => [
+        o.order_number,
+        o.customer_name,
+        o.customer_email,
+        o.customer_phone,
+        orderItemCount(o),
+        o.total,
+        o.payment_status,
+        o.fulfillment_status,
+        o.created_at,
+        o.payment_reference ?? "",
+      ].map(csvEscape).join(","))
     ].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url; a.download = "orders-report.csv"; a.click();
-    toast({ title: "Report exported", description: "CSV file downloaded successfully." });
+    toast({ title: "Report exported", description: "Live CSV file downloaded successfully." });
   };
 
-  const handleSave = (data: Omit<Product, "id">) => {
-    if (editingProduct) {
-      updateProduct(editingProduct.id, data);
-      toast({ title: "Product updated", description: `${data.name} has been updated.` });
-    } else {
-      addProduct(data);
-      toast({ title: "Product added", description: `${data.name} has been added to the catalogue.` });
+  const handleSave = async (data: Omit<Product, "id">) => {
+    try {
+      if (editingProduct) {
+        await updateProduct(editingProduct.id, data);
+        toast({ title: "Product updated", description: `${data.name} has been updated.` });
+      } else {
+        await addProduct(data);
+        toast({ title: "Product added", description: `${data.name} has been added to the catalogue.` });
+      }
+      setEditingProduct(null);
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Error", description: "Failed to save product. Check your connection.", variant: "destructive" });
     }
-    setEditingProduct(null);
   };
 
   const handleEdit = (product: Product) => {
@@ -101,9 +315,14 @@ const Admin = () => {
     setFormOpen(true);
   };
 
-  const handleDelete = (product: Product) => {
-    deleteProduct(product.id);
-    toast({ title: "Product deleted", description: `${product.name} has been removed.` });
+  const handleDelete = async (product: Product) => {
+    try {
+      await deleteProduct(product.id);
+      toast({ title: "Product deleted", description: `${product.name} has been removed.` });
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Error", description: "Failed to delete product.", variant: "destructive" });
+    }
   };
 
   const handleChangePassword = async () => {
@@ -145,6 +364,7 @@ const Admin = () => {
         toast({ title: "Error", description: data.error || "Failed to change password", variant: "destructive" });
       }
     } catch (error) {
+      console.error(error);
       toast({ title: "Error", description: "Failed to change password", variant: "destructive" });
     } finally {
       setChangingPassword(false);
@@ -156,6 +376,7 @@ const Admin = () => {
     { label: "Total Orders", value: orders.length, icon: ShoppingCart, accent: "text-blue-600" },
     { label: "Products", value: products.length, icon: Package, accent: "text-primary" },
     { label: "Pending Orders", value: pendingOrders, icon: TrendingUp, accent: "text-yellow-600" },
+    { label: "Bookings", value: bookings.length, icon: BarChart2, accent: "text-amber-600" },
   ];
 
   return (
@@ -166,12 +387,31 @@ const Admin = () => {
             <Link to="/"><Button variant="ghost" size="icon"><ArrowLeft className="h-5 w-5" /></Button></Link>
             <div>
               <h1 className="font-display text-2xl font-bold">Admin Dashboard</h1>
-              <p className="text-sm text-muted-foreground">Manage your store</p>
+              <p className="text-sm text-muted-foreground">Manage products and live transactions</p>
             </div>
           </div>
-          <Button onClick={handleExport} variant="outline" className="gap-2">
-            <Download className="h-4 w-4" /> Export Report
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={requestNotificationsPermission}
+              variant={notificationsEnabled ? 'default' : 'outline'}
+              className="gap-2"
+              title={
+                typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'denied'
+                  ? 'Notifications blocked — click for instructions'
+                  : notificationsEnabled ? 'Desktop notifications are active' : 'Enable desktop notifications'
+              }
+            >
+              <Bell className="h-4 w-4" />
+              {notificationsEnabled
+                ? 'Notifications On'
+                : typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'denied'
+                ? 'Notifications Blocked'
+                : 'Enable Notifications'}
+            </Button>
+            <Button onClick={handleExport} variant="outline" className="gap-2" disabled={ordersLoading || filteredOrders.length === 0}>
+              <Download className="h-4 w-4" /> Export Report
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -194,6 +434,7 @@ const Admin = () => {
           <TabsList className="w-full justify-start">
             <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
+            <TabsTrigger value="bookings">Bookings</TabsTrigger>
             <TabsTrigger value="visitors" className="gap-1.5">
               <BarChart2 className="h-3.5 w-3.5" />Visitors
             </TabsTrigger>
@@ -235,7 +476,7 @@ const Admin = () => {
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{p.brand}</TableCell>
                         <TableCell><Badge variant="secondary" className="text-xs">{p.category}</Badge></TableCell>
-                        <TableCell className="font-medium">{formatPrice(p.price)}</TableCell>
+                        <TableCell className="font-medium">{formatPrice(p.promoPrice ?? p.price)}</TableCell>
                         <TableCell>
                           <Badge variant={p.inStock ? "default" : "destructive"} className="text-xs">
                             {p.inStock ? "In Stock" : "Out of Stock"}
@@ -277,7 +518,7 @@ const Admin = () => {
           <TabsContent value="orders" className="space-y-4">
             <div className="relative max-w-sm">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Search orders..." value={searchOrder} onChange={(e) => setSearchOrder(e.target.value)} className="pl-9" />
+              <Input placeholder="Search live orders..." value={searchOrder} onChange={(e) => setSearchOrder(e.target.value)} className="pl-9" />
             </div>
             <Card>
               <div className="overflow-x-auto">
@@ -289,38 +530,147 @@ const Admin = () => {
                       <TableHead>Items</TableHead>
                       <TableHead>Total</TableHead>
                       <TableHead>Date</TableHead>
+                      <TableHead>Payment</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredOrders.map((o) => (
+                    {ordersLoading && (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Loading live orders...</TableCell>
+                      </TableRow>
+                    )}
+                    {!ordersLoading && ordersError && (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-8 text-destructive">{ordersError}</TableCell>
+                      </TableRow>
+                    )}
+                    {!ordersLoading && !ordersError && filteredOrders.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No live orders yet.</TableCell>
+                      </TableRow>
+                    )}
+                    {!ordersLoading && !ordersError && filteredOrders.map((o) => (
                       <TableRow key={o.id}>
-                        <TableCell className="font-mono text-sm">{o.id}</TableCell>
+                        <TableCell className="font-mono text-sm">{o.order_number}</TableCell>
                         <TableCell>
                           <div>
-                            <p className="font-medium text-sm">{o.customer}</p>
-                            <p className="text-xs text-muted-foreground">{o.email}</p>
+                            <p className="font-medium text-sm">{o.customer_name}</p>
+                            <p className="text-xs text-muted-foreground">{o.customer_email}</p>
+                            <p className="text-xs text-muted-foreground">{o.customer_phone}</p>
                           </div>
                         </TableCell>
-                        <TableCell>{o.items}</TableCell>
+                        <TableCell>{orderItemCount(o)}</TableCell>
                         <TableCell className="font-medium">{formatPrice(o.total)}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{o.date}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{formatOrderDate(o.created_at)}</TableCell>
                         <TableCell>
-                          <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium capitalize ${statusColors[o.status]}`}>{o.status}</span>
+                          <Badge variant="outline" className={`capitalize ${paymentColors[o.payment_status]}`}>{o.payment_status.replace("_", " ")}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={`capitalize ${fulfillmentColors[o.fulfillment_status]}`}>{o.fulfillment_status}</Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <select
-                            value={o.status}
+                            value={o.fulfillment_status}
                             onChange={(e) => updateOrderStatus(o.id, e.target.value)}
-                            title={`Update status for ${o.id}`}
-                            aria-label={`Update status for ${o.id}`}
+                            title={`Update status for ${o.order_number}`}
+                            aria-label={`Update status for ${o.order_number}`}
                             className="rounded-md border border-input bg-background px-2 py-1 text-xs"
                           >
                             <option value="pending">Pending</option>
                             <option value="confirmed">Confirmed</option>
                             <option value="shipped">Shipped</option>
                             <option value="delivered">Delivered</option>
+                            <option value="cancelled">Cancelled</option>
+                          </select>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="bookings" className="space-y-4">
+            <div className="relative max-w-sm">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input placeholder="Search live bookings..." value={searchBooking} onChange={(e) => setSearchBooking(e.target.value)} className="pl-9" />
+            </div>
+            <Card>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Booking ID</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Product</TableHead>
+                      <TableHead>Qty</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {bookingsLoading && (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Loading bookings...</TableCell>
+                      </TableRow>
+                    )}
+                    {!bookingsLoading && bookingsError && (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-destructive">{bookingsError}</TableCell>
+                      </TableRow>
+                    )}
+                    {!bookingsLoading && !bookingsError && bookings.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No bookings yet.</TableCell>
+                      </TableRow>
+                    )}
+                    {!bookingsLoading && !bookingsError && bookings.filter(b => {
+                      const searchable = [b.booking_number, b.customer_name, b.customer_email, b.customer_phone, b.product_name].join(" ").toLowerCase();
+                      return searchable.includes(searchBooking.toLowerCase());
+                    }).map((b) => (
+                      <TableRow key={b.id}>
+                        <TableCell className="font-mono text-sm">{b.booking_number}</TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium text-sm">{b.customer_name}</p>
+                            <p className="text-xs text-muted-foreground">{b.customer_email}</p>
+                            <p className="text-xs text-muted-foreground">{b.customer_phone}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>{b.product_name}</TableCell>
+                        <TableCell>{b.quantity}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{formatOrderDate(b.created_at)}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={`capitalize ${b.status === 'pending' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' : b.status === 'confirmed' ? 'bg-blue-100 text-blue-800 border-blue-200' : 'bg-red-100 text-red-800 border-red-200'}`}>{b.status}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <select
+                            value={b.status}
+                            onChange={async (e) => {
+                              const prev = bookings;
+                              const newStatus = e.target.value as any;
+                              setBookings((prevB) => prevB.map(x => x.id === b.id ? { ...x, status: newStatus } : x));
+                              try {
+                                const updated = await updateBookingStatus(b.id, newStatus);
+                                setBookings((prevB) => prevB.map(x => x.id === updated.id ? updated : x));
+                                toast({ title: 'Booking updated', description: `${updated.booking_number} status changed to ${updated.status}` });
+                              } catch (err) {
+                                console.error(err);
+                                setBookings(prev);
+                                toast({ title: 'Update failed', description: 'Unable to update booking status.', variant: 'destructive' });
+                              }
+                            }}
+                            title={`Update status for ${b.booking_number}`}
+                            aria-label={`Update status for ${b.booking_number}`}
+                            className="rounded-md border border-input bg-background px-2 py-1 text-xs"
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="cancelled">Cancelled</option>
                           </select>
                         </TableCell>
                       </TableRow>

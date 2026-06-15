@@ -1,6 +1,5 @@
-import { useEffect, useState, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
-import { format, subDays, startOfDay, startOfHour, subHours } from 'date-fns';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { apiGet } from '@/lib/api';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts';
@@ -25,6 +24,12 @@ interface Visit {
   user_agent: string | null;
   session_id: string;
   referrer: string | null;
+}
+
+interface StatsResponse {
+  visits: Visit[];
+  totalCount: number;
+  activeCount: number;
 }
 
 interface Stats {
@@ -63,6 +68,46 @@ function shortAgent(ua: string | null): string {
   return 'Other';
 }
 
+function startOfDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function startOfHour(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours());
+}
+
+function subDays(date: Date, amount: number): Date {
+  const next = new Date(date);
+  next.setDate(next.getDate() - amount);
+  return next;
+}
+
+function subHours(date: Date, amount: number): Date {
+  const next = new Date(date);
+  next.setHours(next.getHours() - amount);
+  return next;
+}
+
+function pad(value: number): string {
+  return value.toString().padStart(2, '0');
+}
+
+function formatTime(date: Date): string {
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
+
+function formatHour(date: Date): string {
+  return `${pad(date.getHours())}:00`;
+}
+
+function formatDay(date: Date): string {
+  return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(date);
+}
+
+function formatVisitTime(date: Date): string {
+  return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date);
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function VisitorsDashboard() {
@@ -78,6 +123,7 @@ export function VisitorsDashboard() {
   const [recentVisits, setRecentVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Data fetching ──────────────────────────────────────────────────────────
 
@@ -85,44 +131,16 @@ export function VisitorsDashboard() {
     setLoading(true);
     try {
       const now = new Date();
-      const rangeStart =
-        filter === 'today'
-          ? startOfDay(now).toISOString()
-          : subDays(now, 6).toISOString();
-
-      // 1. All visits in range (with timestamps for aggregation)
-      const { data: visitsInRange, error: visitsErr } = await supabase
-        .from('visits')
-        .select('id, page, timestamp, user_agent, session_id, referrer')
-        .gte('timestamp', rangeStart)
-        .order('timestamp', { ascending: false });
-
-      if (visitsErr) throw visitsErr;
-      const rangeVisits: Visit[] = visitsInRange ?? [];
-
-      // 2. Total visits (all time)
-      const { count: totalCount, error: totalErr } = await supabase
-        .from('visits')
-        .select('*', { count: 'exact', head: true });
-      if (totalErr) throw totalErr;
-
-      // 3. Active users in the last 2 minutes
-      const twoMinutesAgo = new Date(Date.now() - 2 * 60_000).toISOString();
-      const { count: activeCount, error: activeErr } = await supabase
-        .from('active_users')
-        .select('*', { count: 'exact', head: true })
-        .gte('last_seen', twoMinutesAgo);
-      if (activeErr) throw activeErr;
-
-      // ── Aggregations ──────────────────────────────────────────────────────
+      const data = await apiGet<StatsResponse>(`/api/visits/stats?filter=${filter}`);
+      const rangeVisits = data.visits;
 
       const uniqueSessions = new Set(rangeVisits.map((v) => v.session_id)).size;
 
       setStats({
-        totalVisits: totalCount ?? 0,
+        totalVisits: data.totalCount,
         visitsInRange: rangeVisits.length,
         uniqueSessions,
-        activeUsers: activeCount ?? 0,
+        activeUsers: data.activeCount,
       });
 
       // Pages table
@@ -138,36 +156,29 @@ export function VisitorsDashboard() {
 
       // Chart: group by hour (today) or by day (7 days)
       if (filter === 'today') {
-        // Last 24 hours, grouped by hour
         const buckets: Record<string, number> = {};
         for (let h = 23; h >= 0; h--) {
-          const key = format(startOfHour(subHours(now, h)), 'HH:00');
+          const key = formatHour(startOfHour(subHours(now, h)));
           buckets[key] = 0;
         }
         rangeVisits.forEach((v) => {
-          const key = format(startOfHour(new Date(v.timestamp)), 'HH:00');
+          const key = formatHour(startOfHour(new Date(v.timestamp)));
           if (key in buckets) buckets[key] = (buckets[key] || 0) + 1;
         });
-        setChartData(
-          Object.entries(buckets).map(([label, visits]) => ({ label, visits }))
-        );
+        setChartData(Object.entries(buckets).map(([label, visits]) => ({ label, visits })));
       } else {
-        // Last 7 days, grouped by day
         const buckets: Record<string, number> = {};
         for (let d = 6; d >= 0; d--) {
-          const key = format(subDays(now, d), 'MMM d');
+          const key = formatDay(subDays(now, d));
           buckets[key] = 0;
         }
         rangeVisits.forEach((v) => {
-          const key = format(new Date(v.timestamp), 'MMM d');
+          const key = formatDay(new Date(v.timestamp));
           if (key in buckets) buckets[key] = (buckets[key] || 0) + 1;
         });
-        setChartData(
-          Object.entries(buckets).map(([label, visits]) => ({ label, visits }))
-        );
+        setChartData(Object.entries(buckets).map(([label, visits]) => ({ label, visits })));
       }
 
-      // Recent visits (top 10)
       setRecentVisits(rangeVisits.slice(0, 10));
       setLastRefreshed(new Date());
     } catch (err) {
@@ -182,28 +193,22 @@ export function VisitorsDashboard() {
     fetchData();
   }, [fetchData]);
 
-  // Real-time: recount active users whenever active_users table changes
+  // Poll active users count every 30 seconds
   useEffect(() => {
-    const channel = supabase
-      .channel('active_users_rt')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'active_users' },
-        async () => {
-          const twoMinutesAgo = new Date(Date.now() - 2 * 60_000).toISOString();
-          const { count } = await supabase
-            .from('active_users')
-            .select('*', { count: 'exact', head: true })
-            .gte('last_seen', twoMinutesAgo);
-          setStats((prev) => ({ ...prev, activeUsers: count ?? 0 }));
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
+    const tick = async () => {
+      try {
+        const data = await apiGet<StatsResponse>(`/api/visits/stats?filter=${filter}`);
+        setStats((prev) => ({ ...prev, activeUsers: data.activeCount }));
+      } catch {
+        // ignore poll errors
+      }
     };
-  }, []);
+
+    pollRef.current = setInterval(tick, 30_000);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [filter]);
 
   // ── UI ────────────────────────────────────────────────────────────────────
 
@@ -242,13 +247,13 @@ export function VisitorsDashboard() {
         <div>
           <h2 className="text-lg font-semibold">Visitor Analytics</h2>
           <p className="text-xs text-muted-foreground">
-            Last refreshed: {format(lastRefreshed, 'HH:mm:ss')}
+            Last refreshed: {formatTime(lastRefreshed)}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {/* Filter buttons */}
           <div className="flex rounded-md border border-input overflow-hidden text-sm">
             <button
+              type="button"
               onClick={() => setFilter('today')}
               className={`px-3 py-1.5 transition-colors ${
                 filter === 'today'
@@ -259,6 +264,7 @@ export function VisitorsDashboard() {
               Today
             </button>
             <button
+              type="button"
               onClick={() => setFilter('7days')}
               className={`px-3 py-1.5 transition-colors border-l border-input ${
                 filter === '7days'
@@ -426,7 +432,7 @@ export function VisitorsDashboard() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap">
-                        {format(new Date(v.timestamp), 'MMM d, HH:mm')}
+                        {formatVisitTime(new Date(v.timestamp))}
                       </TableCell>
                     </TableRow>
                   ))}

@@ -1,38 +1,50 @@
 import { useState, useEffect, useCallback } from "react";
-import { Product, products as defaultProducts, categories as defaultCategories } from "@/data/products";
-
-const STORAGE_KEY = "adedas_products";
-
-function loadProducts(): Product[] {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) return JSON.parse(stored);
-  } catch {}
-  return [...defaultProducts];
-}
-
-function saveProducts(products: Product[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
-}
+import { type Product, defaultProducts } from "@/data/products";
+import {
+  listProducts,
+  createProduct,
+  updateProduct as updateProductDb,
+  deleteProduct as deleteProductDb,
+} from "@/lib/products";
 
 export function useProducts() {
-  const [products, setProducts] = useState<Product[]>(loadProducts);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const rows = await listProducts();
+      setProducts(rows);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to load products";
+      console.warn("useProducts: API unavailable, using local defaults.", err);
+      setError(msg);
+      setProducts(defaultProducts);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    saveProducts(products);
-  }, [products]);
+    load();
+  }, [load]);
 
-  const addProduct = useCallback((product: Omit<Product, "id">) => {
-    const id = crypto.randomUUID();
-    setProducts((prev) => [...prev, { ...product, id }]);
-    return id;
+  const addProduct = useCallback(async (product: Omit<Product, "id">): Promise<string> => {
+    const created = await createProduct(product);
+    setProducts((prev) => [...prev, created]);
+    return created.id;
   }, []);
 
-  const updateProduct = useCallback((id: string, updates: Partial<Omit<Product, "id">>) => {
-    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)));
+  const updateProduct = useCallback(async (id: string, updates: Partial<Omit<Product, "id">>) => {
+    const updated = await updateProductDb(id, updates);
+    setProducts((prev) => prev.map((p) => (p.id === id ? updated : p)));
   }, []);
 
-  const deleteProduct = useCallback((id: string) => {
+  const deleteProduct = useCallback(async (id: string) => {
+    await deleteProductDb(id);
     setProducts((prev) => prev.filter((p) => p.id !== id));
   }, []);
 
@@ -41,5 +53,5 @@ export function useProducts() {
     ...Array.from(new Set(products.map((p) => p.category))).sort(),
   ];
 
-  return { products, categories, addProduct, updateProduct, deleteProduct };
+  return { products, categories, loading, error, addProduct, updateProduct, deleteProduct };
 }

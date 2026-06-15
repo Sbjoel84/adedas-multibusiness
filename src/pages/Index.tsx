@@ -2,7 +2,6 @@ import { useState } from "react";
 import HeroSection from "@/components/HeroSection";
 import ProductCard from "@/components/ProductCard";
 import { useProducts } from "@/hooks/useProducts";
-import { formatPrice } from "@/data/products";
 import { Link } from "react-router-dom";
 import { ArrowRight, Truck, Shield, Sparkles, Leaf, Droplets, CheckCircle, Star, Quote } from "lucide-react";
 import { motion } from "framer-motion";
@@ -26,10 +25,8 @@ const testimonials = [
   { name: "Chioma E.", location: "Port Harcourt", rating: 4, text: "I bought the full collection as a gift and the packaging was beautiful. Premium quality at a great price." },
 ];
 
-const filterCategories = ["All", "Shea Butter", "Body Cream", "Soaps", "Gift Sets"];
-
 const Index = () => {
-  const { products } = useProducts();
+  const { products, categories } = useProducts();
   const [activeCategory, setActiveCategory] = useState("All");
   const featured = products.slice(0, 4);
 
@@ -122,7 +119,7 @@ const Index = () => {
           <h2 className="font-display text-2xl font-bold md:text-3xl">Beauty Care Products</h2>
         </div>
         <div className="flex flex-wrap justify-center gap-2 mb-10">
-          {filterCategories.map((cat) => (
+          {categories.map((cat) => (
             <button key={cat} onClick={() => setActiveCategory(cat)} className={`rounded-full px-5 py-2 text-xs font-medium transition-colors ${activeCategory === cat ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}>{cat}</button>
           ))}
         </div>

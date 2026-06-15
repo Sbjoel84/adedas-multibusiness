@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ShoppingBag, Star } from "lucide-react";
+import { ShoppingBag } from "lucide-react";
 import { Product, formatPrice } from "@/data/products";
 import { useCart } from "@/context/CartContext";
 import { motion } from "framer-motion";
@@ -49,13 +49,6 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
           <h3 className="font-display text-sm font-medium leading-snug line-clamp-2 group-hover:text-primary transition-colors">
             {product.name}
           </h3>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-0.5">
-              <Star size={12} className="fill-accent text-accent" />
-              <span className="text-xs text-muted-foreground">{product.rating}</span>
-            </div>
-            <span className="text-xs text-muted-foreground">({product.reviews})</span>
-          </div>
           <div className="flex items-center gap-1.5">
             {product.promoPrice ? (
               <>

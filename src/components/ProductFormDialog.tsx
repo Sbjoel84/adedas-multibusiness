@@ -78,8 +78,6 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave 
       volume: form.volume.trim(),
       image: form.image || "/placeholder.svg",
       description: form.description.trim(),
-      rating: product ? (product as Product).rating : 4.5,
-      reviews: product ? (product as Product).reviews : 0,
       tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
       inStock: true,
     });
