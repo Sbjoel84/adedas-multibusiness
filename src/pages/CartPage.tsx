@@ -260,7 +260,8 @@ const CartPage = () => {
       toast.success(`Order ${order.order_number} created. ${paymentMethod === "bank_transfer" ? "Confirm payment with the bank details." : "You will be contacted before delivery."}`);
     } catch (error) {
       console.error(error);
-      toast.error("Unable to create order. Please try again.");
+      const msg = error instanceof Error ? error.message : String(error);
+      toast.error(`Order failed: ${msg}`);
     } finally {
       setIsProcessing(false);
     }
