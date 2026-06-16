@@ -1,4 +1,4 @@
-import express from 'express'
+import express, { NextFunction, Request, Response } from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 
@@ -44,6 +44,12 @@ app.use('/api/paypal', paypalRoutes)
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }))
 app.get('/', (_req, res) => res.send('ADEDAS API running...'))
+
+// Global JSON error handler — prevents Express from returning HTML error pages
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  console.error('[unhandled error]', err)
+  res.status(500).json({ error: err.message || 'Internal server error' })
+})
 
 const PORT = Number(process.env.PORT) || 3001
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
