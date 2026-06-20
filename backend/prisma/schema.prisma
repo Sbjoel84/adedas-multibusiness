@@ -43,6 +43,7 @@ model Order {
   items                    Json     @default("[]")
   paymentReference         String?  @map("payment_reference")
   paystackAuthorizationUrl String?  @map("paystack_authorization_url")
+  paymentProofUrl          String?  @map("payment_proof_url") @db.Text
   notes                    String?
   createdAt                DateTime @default(now()) @map("created_at")
   updatedAt                DateTime @updatedAt @map("updated_at")

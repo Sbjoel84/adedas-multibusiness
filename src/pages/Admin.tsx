@@ -6,7 +6,8 @@ import ProductFormDialog from "@/components/ProductFormDialog";
 import { VisitorsDashboard } from "@/components/VisitorsDashboard";
 import {
   Package, ShoppingCart, DollarSign, TrendingUp,
-  Edit, Trash2, Plus, Eye, Download, ArrowLeft, Search, Lock, BarChart2
+  Edit, Trash2, Plus, Eye, Download, ArrowLeft, Search, Lock, BarChart2,
+  CheckCircle2, XCircle, Paperclip, X
 } from "lucide-react";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ import {
   listOrders,
   subscribeOrders,
   updateOrderStatus as updateOrderFulfillment,
+  updateOrderPayment,
   type OrderRecord,
   type OrderStatus,
 } from "@/lib/orders";
@@ -78,6 +80,8 @@ const Admin = () => {
   const [bookingsLoading, setBookingsLoading] = useState(true);
   const [bookingsError, setBookingsError] = useState("");
   const [searchBooking, setSearchBooking] = useState("");
+  const [proofOrder, setProofOrder] = useState<OrderRecord | null>(null);
+  const [confirmingPayment, setConfirmingPayment] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -268,6 +272,26 @@ const Admin = () => {
       console.error(error);
       setOrders(previousOrders);
       toast({ title: "Update failed", description: "Unable to update live order status.", variant: "destructive" });
+    }
+  };
+
+  const handlePaymentDecision = async (status: "paid" | "failed") => {
+    if (!proofOrder) return;
+    setConfirmingPayment(true);
+    try {
+      const updated = await updateOrderPayment(proofOrder.id, { paymentStatus: status });
+      setOrders((prev) => prev.map((o) => o.id === updated.id ? updated : o));
+      setProofOrder(updated);
+      toast({
+        title: status === "paid" ? "Payment confirmed" : "Payment rejected",
+        description: `${updated.order_number} marked as ${status}.`,
+      });
+      if (status === "paid") setProofOrder(null);
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Update failed", description: "Could not update payment status.", variant: "destructive" });
+    } finally {
+      setConfirmingPayment(false);
     }
   };
 
@@ -532,6 +556,7 @@ const Admin = () => {
                       <TableHead>Date</TableHead>
                       <TableHead>Payment</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Proof</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -569,6 +594,20 @@ const Admin = () => {
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className={`capitalize ${fulfillmentColors[o.fulfillment_status]}`}>{o.fulfillment_status}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          {o.payment_proof_url ? (
+                            <button
+                              type="button"
+                              onClick={() => setProofOrder(o)}
+                              className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium whitespace-nowrap"
+                            >
+                              <Paperclip size={12} />
+                              {o.payment_status === "pending" ? "Review" : "View proof"}
+                            </button>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
                         </TableCell>
                         <TableCell className="text-right">
                           <select
@@ -740,6 +779,91 @@ const Admin = () => {
         product={editingProduct}
         onSave={handleSave}
       />
+
+      {/* Proof of Payment Dialog */}
+      {proofOrder && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setProofOrder(null)}>
+          <div
+            className="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b">
+              <div>
+                <h2 className="font-semibold text-base">Payment Proof</h2>
+                <p className="text-xs text-muted-foreground font-mono">{proofOrder.order_number}</p>
+              </div>
+              <button type="button" onClick={() => setProofOrder(null)} className="p-1.5 rounded hover:bg-gray-100">
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Order summary */}
+            <div className="px-5 pt-4 pb-3 space-y-1 border-b bg-gray-50">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Customer</span>
+                <span className="font-medium">{proofOrder.customer_name}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Phone</span>
+                <span>{proofOrder.customer_phone}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Amount</span>
+                <span className="font-bold text-base">{formatPrice(proofOrder.total)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Payment status</span>
+                <Badge variant="outline" className={`capitalize text-xs ${paymentColors[proofOrder.payment_status]}`}>
+                  {proofOrder.payment_status}
+                </Badge>
+              </div>
+            </div>
+
+            {/* Proof image */}
+            <div className="p-5">
+              <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Attached receipt</p>
+              <img
+                src={proofOrder.payment_proof_url!}
+                alt="Proof of payment"
+                className="w-full rounded-lg border object-contain max-h-80"
+              />
+            </div>
+
+            {/* Actions */}
+            {proofOrder.payment_status === "pending" && (
+              <div className="px-5 pb-5 flex gap-3">
+                <button
+                  type="button"
+                  disabled={confirmingPayment}
+                  onClick={() => handlePaymentDecision("paid")}
+                  className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-lg transition-colors"
+                >
+                  <CheckCircle2 size={16} />
+                  {confirmingPayment ? "Confirming…" : "Confirm Payment"}
+                </button>
+                <button
+                  type="button"
+                  disabled={confirmingPayment}
+                  onClick={() => handlePaymentDecision("failed")}
+                  className="flex-1 flex items-center justify-center gap-2 border border-red-300 hover:bg-red-50 disabled:opacity-50 text-red-600 text-sm font-medium py-2.5 rounded-lg transition-colors"
+                >
+                  <XCircle size={16} />
+                  Reject
+                </button>
+              </div>
+            )}
+
+            {proofOrder.payment_status !== "pending" && (
+              <div className="px-5 pb-5">
+                <p className="text-center text-sm text-muted-foreground capitalize">
+                  Payment already marked as <span className="font-medium">{proofOrder.payment_status}</span>.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   );
 };

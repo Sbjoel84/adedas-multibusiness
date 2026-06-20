@@ -25,6 +25,7 @@ export interface CreateOrderInput {
   notes?: string;
   paymentReference?: string;
   paystackAuthorizationUrl?: string;
+  paymentProofUrl?: string;
 }
 
 export interface OrderRecord {
@@ -43,6 +44,7 @@ export interface OrderRecord {
   items: OrderLine[];
   payment_reference?: string | null;
   paystack_authorization_url?: string | null;
+  payment_proof_url?: string | null;
   notes?: string | null;
   created_at: string;
   updated_at: string;
@@ -64,6 +66,7 @@ export async function createOrder(input: CreateOrderInput): Promise<OrderRecord>
     notes: input.notes,
     paymentReference: input.paymentReference,
     paystackAuthorizationUrl: input.paystackAuthorizationUrl,
+    paymentProofUrl: input.paymentProofUrl,
   })
 }
 

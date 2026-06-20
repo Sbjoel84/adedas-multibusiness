@@ -26,6 +26,7 @@ function toApiOrder(o: {
   items: unknown
   paymentReference: string | null
   paystackAuthorizationUrl: string | null
+  paymentProofUrl?: string | null
   notes: string | null
   createdAt: Date
   updatedAt: Date
@@ -46,6 +47,7 @@ function toApiOrder(o: {
     items: Array.isArray(o.items) ? o.items : [],
     payment_reference: o.paymentReference ?? null,
     paystack_authorization_url: o.paystackAuthorizationUrl ?? null,
+    payment_proof_url: o.paymentProofUrl ?? null,
     notes: o.notes ?? null,
     created_at: o.createdAt.toISOString(),
     updated_at: o.updatedAt.toISOString(),
@@ -68,7 +70,7 @@ router.post('/orders', async (req: Request, res: Response) => {
   try {
     const {
       customerName, customerEmail, customerPhone, deliveryAddress,
-      paymentMethod, items, deliveryFee, notes, paymentReference, paystackAuthorizationUrl,
+      paymentMethod, items, deliveryFee, notes, paymentReference, paystackAuthorizationUrl, paymentProofUrl,
     } = req.body
 
     if (!customerName || !customerPhone || !deliveryAddress || !paymentMethod || !Array.isArray(items)) {
@@ -95,6 +97,7 @@ router.post('/orders', async (req: Request, res: Response) => {
         items: items as object[],
         paymentReference: paymentReference ?? null,
         paystackAuthorizationUrl: paystackAuthorizationUrl ?? null,
+        paymentProofUrl: paymentProofUrl ?? null,
         notes: notes ? String(notes).trim() : null,
       },
     })

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/data/products";
-import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft, CreditCard, Lock, Check, X, Building2, Wallet, Banknote, User, Mail, Phone, MapPin, MessageSquare } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft, CreditCard, Lock, Check, X, Building2, Wallet, Banknote, User, Mail, Phone, MapPin, MessageSquare, Paperclip, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -52,6 +52,45 @@ const CartPage = () => {
     expiryDate: "",
     cvv: "",
   });
+  const [paymentProof, setPaymentProof] = useState<string | null>(null);
+  const [paymentProofName, setPaymentProofName] = useState<string>("");
+
+  const compressImage = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX_WIDTH = 1200;
+          const scale = Math.min(1, MAX_WIDTH / img.width);
+          const canvas = document.createElement("canvas");
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
+          canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL("image/jpeg", 0.75));
+        };
+        img.onerror = reject;
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const handleProofUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("File too large. Please upload an image under 10MB.");
+      return;
+    }
+    try {
+      const compressed = await compressImage(file);
+      setPaymentProof(compressed);
+      setPaymentProofName(file.name);
+    } catch {
+      toast.error("Could not read the image. Please try another file.");
+    }
+  };
 
   const handleCustomerInput = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -99,7 +138,7 @@ const CartPage = () => {
     return true;
   };
 
-  const createPendingOrder = async () => {
+  const createPendingOrder = async (proofUrl?: string) => {
     const reference = `ADE_${Date.now()}_${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
     const order = await createOrder({
       customerName: customerDetails.fullName,
@@ -119,6 +158,7 @@ const CartPage = () => {
       deliveryFee: 0,
       notes: customerDetails.notes,
       paymentReference: reference,
+      paymentProofUrl: proofUrl,
     });
     setCurrentOrder(order);
     return order;
@@ -246,6 +286,8 @@ const CartPage = () => {
     setCurrentOrder(null);
     setCardDetails({ cardNumber: "", cardHolder: "", expiryDate: "", cvv: "" });
     setPaymentMethod("card");
+    setPaymentProof(null);
+    setPaymentProofName("");
   };
 
   const handleAlternativePayment = async () => {
@@ -253,7 +295,7 @@ const CartPage = () => {
     setIsProcessing(true);
 
     try {
-      const order = await createPendingOrder();
+      const order = await createPendingOrder(paymentProof ?? undefined);
       clearCart();
       setCurrentOrder(order);
       setPaymentSuccess(true);
@@ -632,6 +674,42 @@ const CartPage = () => {
 
             {paymentMethod === "bank_transfer" && (
               <div>
+                <div className="bg-blue-50 rounded-lg p-4 mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Paperclip size={16} className="text-blue-600" />
+                    <span className="text-sm font-medium text-blue-800">Attach Proof of Payment</span>
+                    <span className="text-xs text-blue-500">(optional)</span>
+                  </div>
+                  <p className="text-xs text-blue-600 mb-3">Upload a screenshot or photo of your transfer receipt.</p>
+                  <label className="flex flex-col items-center gap-2 cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={handleProofUpload}
+                    />
+                    {paymentProof ? (
+                      <div className="relative w-full">
+                        <img
+                          src={paymentProof}
+                          alt="Payment proof preview"
+                          className="w-full max-h-40 object-contain rounded-lg border border-blue-200"
+                        />
+                        <div className="mt-1 flex items-center gap-1 text-xs text-blue-700">
+                          <Check size={12} className="text-green-600" />
+                          <span className="truncate">{paymentProofName}</span>
+                        </div>
+                        <p className="text-xs text-blue-500 text-center mt-1">Tap to change</p>
+                      </div>
+                    ) : (
+                      <div className="w-full border-2 border-dashed border-blue-300 rounded-lg p-4 flex flex-col items-center gap-2 hover:border-blue-400 transition-colors">
+                        <ImageIcon size={24} className="text-blue-400" />
+                        <span className="text-xs text-blue-600 font-medium">Tap to upload receipt</span>
+                        <span className="text-xs text-blue-400">JPG, PNG, WEBP — max 10MB</span>
+                      </div>
+                    )}
+                  </label>
+                </div>
                 <div className="bg-blue-50 rounded-lg p-4 mb-4">
                   <div className="flex items-center gap-2 mb-3">
                     <Banknote size={20} className="text-blue-600" />
