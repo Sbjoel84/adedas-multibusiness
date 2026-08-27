@@ -112,9 +112,12 @@ router.post('/orders', async (req: Request, res: Response) => {
       `Delivery: ${order.deliveryAddress}`,
     ].join('\n')
 
-    sendWhatsAppNotification(msg).catch((err) =>
-      console.warn('[orders POST] WhatsApp notify failed:', err)
-    )
+    sendWhatsAppNotification(msg)
+      .then((r) => {
+        if (r.ok) console.log(`[orders POST] WhatsApp notified via ${r.provider} for ${order.orderNumber}`)
+        else console.warn(`[orders POST] WhatsApp notify not sent (${r.provider}): ${r.detail ?? 'unknown'}`)
+      })
+      .catch((err) => console.warn('[orders POST] WhatsApp notify threw:', err))
 
     res.status(201).json(toApiOrder(order))
   } catch (err) {

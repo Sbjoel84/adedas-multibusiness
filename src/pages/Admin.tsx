@@ -92,6 +92,31 @@ const Admin = () => {
 
   const adminToken = localStorage.getItem('adminToken');
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [activeTab, setActiveTab] = useState("products");
+
+  // Short audio ping for new orders/bookings (best-effort; browsers may block autoplay).
+  const playPing = useCallback(() => {
+    try {
+      const Ctx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!Ctx) return;
+      const ctx = new Ctx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.setValueAtTime(1175, ctx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.42);
+      osc.onended = () => ctx.close();
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const loadOrders = useCallback(async () => {
     setOrdersLoading(true);
@@ -173,7 +198,7 @@ const Admin = () => {
     if (Notification.permission !== 'granted') return;
 
     try {
-      const n = new Notification(title, { body, tag: 'adedas-admin', renotify: true });
+      const n = new Notification(title, { body, tag: 'adedas-admin', renotify: true } as NotificationOptions);
       n.onclick = () => { try { window.focus(); } catch (e) {} };
     } catch (err) {
       console.error('Notification error', err);
@@ -200,6 +225,7 @@ const Admin = () => {
               const desc = `${event.order.order_number} — ${event.order.customer_name}`;
               toast({ title, description: desc });
               sendBrowserNotification(title, desc);
+              playPing();
             } catch (err) {
               // ignore toast errors
             }
@@ -230,6 +256,7 @@ const Admin = () => {
             const desc = `${event.booking.booking_number} — ${event.booking.customer_name}`;
             try { toast({ title, description: desc }); } catch(e){}
             sendBrowserNotification(title, desc);
+            playPing();
           } catch (e) {}
         }
 
@@ -242,6 +269,21 @@ const Admin = () => {
 
   const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
   const pendingOrders = orders.filter(o => o.fulfillment_status === "pending").length;
+
+  // Transactions that still need the admin's attention.
+  const ordersNeedingAttention = orders.filter(
+    (o) => o.payment_status === "pending" || o.fulfillment_status === "pending"
+  ).length;
+  const bookingsNeedingAttention = bookings.filter((b) => b.status === "pending").length;
+  const attentionCount = ordersNeedingAttention + bookingsNeedingAttention;
+
+  // Reflect the pending count in the browser tab title so it's visible even when
+  // the dashboard is in a background tab.
+  useEffect(() => {
+    const base = "Admin Dashboard — ADEDAS";
+    document.title = attentionCount > 0 ? `(${attentionCount}) ${base}` : base;
+    return () => { document.title = base; };
+  }, [attentionCount]);
 
   const filteredProducts = useMemo(() => products.filter(p =>
     p.name.toLowerCase().includes(searchProduct.toLowerCase()) ||
@@ -415,6 +457,28 @@ const Admin = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab(bookingsNeedingAttention > ordersNeedingAttention ? "bookings" : "orders")}
+              title={
+                attentionCount > 0
+                  ? `${attentionCount} transaction(s) awaiting attention`
+                  : "No transactions awaiting attention"
+              }
+              aria-label={`${attentionCount} transactions awaiting attention`}
+              className={`relative rounded-full p-2 transition-colors ${
+                attentionCount > 0
+                  ? "bg-red-50 text-red-600 hover:bg-red-100"
+                  : "text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              <Bell className={`h-5 w-5 ${attentionCount > 0 ? "animate-pulse" : ""}`} />
+              {attentionCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold leading-none text-white">
+                  {attentionCount > 99 ? "99+" : attentionCount}
+                </span>
+              )}
+            </button>
             <Button
               onClick={requestNotificationsPermission}
               variant={notificationsEnabled ? 'default' : 'outline'}
@@ -454,11 +518,25 @@ const Admin = () => {
           ))}
         </div>
 
-        <Tabs defaultValue="products">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="w-full justify-start">
             <TabsTrigger value="products">Products</TabsTrigger>
-            <TabsTrigger value="orders">Orders</TabsTrigger>
-            <TabsTrigger value="bookings">Bookings</TabsTrigger>
+            <TabsTrigger value="orders" className="gap-1.5">
+              Orders
+              {ordersNeedingAttention > 0 && (
+                <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold leading-none text-white">
+                  {ordersNeedingAttention}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="bookings" className="gap-1.5">
+              Bookings
+              {bookingsNeedingAttention > 0 && (
+                <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold leading-none text-white">
+                  {bookingsNeedingAttention}
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="visitors" className="gap-1.5">
               <BarChart2 className="h-3.5 w-3.5" />Visitors
             </TabsTrigger>
